@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-#include "driver/i2c.h"
+#include "driver/i2c_types.h"
 #include "esp_err.h"
 
 #include "esp_io_expander.h"

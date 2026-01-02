@@ -1,5 +1,12 @@
 # ChangeLog
 
+## v2.0.0 - 2026-01-02
+
+### Enhancements:
+
+* feat(port): support ESP-IDF new I2C driver (`driver_ng`) for Arduino/Wire integration
+* docs(readme): document PlatformIO usage with pioarduino `platform-espressif32` and git tag based version pinning
+
 ## v1.1.1 - 2025-07-07
 
 ### Enhancements:

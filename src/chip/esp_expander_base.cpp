@@ -5,9 +5,10 @@
  */
 
 #include "inttypes.h"
-#include "driver/i2c.h"
+#include "esp_idf_version.h"
 #include "esp_expander_utils.h"
 #include "esp_expander_base.hpp"
+#include "port/esp_expander_i2c_ng.h"
 
 // Check whether it is a valid pin number
 #define IS_VALID_PIN(pin_num)   (pin_num < IO_COUNT_MAX)
@@ -133,16 +134,14 @@ bool Base::init(void)
     _config.printDeviceConfig();
 #endif // ESP_UTILS_LOG_LEVEL_DEBUG
 
-    // Initialize the I2C host if not skipped
+    // Initialize the I2C host if not skipped (driver_ng via Arduino core)
     if (!isHostSkipInit()) {
         i2c_port_t host_id = static_cast<i2c_port_t>(getConfig().host_id);
         ESP_UTILS_CHECK_ERROR_RETURN(
-            i2c_param_config(host_id, getHostFullConfig()), false, "I2C param config failed"
+            esp_expander_i2c_ng_init_from_legacy_config(host_id, getHostFullConfig()), false,
+            "I2C init (driver_ng) failed"
         );
-        ESP_UTILS_CHECK_ERROR_RETURN(
-            i2c_driver_install(host_id, getHostFullConfig()->mode, 0, 0, 0), false, "I2C driver install failed"
-        );
-        ESP_UTILS_LOGD("Init I2C host(%d)", static_cast<int>(host_id));
+        ESP_UTILS_LOGD("Init I2C host(%d) via driver_ng", static_cast<int>(host_id));
     }
 
     setState(State::INIT);
@@ -177,8 +176,8 @@ bool Base::del(void)
 
     if (isOverState(State::INIT) && !isHostSkipInit()) {
         i2c_port_t host_id = static_cast<i2c_port_t>(getConfig().host_id);
-        ESP_UTILS_CHECK_ERROR_RETURN(i2c_driver_delete(host_id), false, "I2C driver delete failed");
-        ESP_UTILS_LOGD("Delete I2C host(%d)", static_cast<int>(host_id));
+        ESP_UTILS_CHECK_ERROR_RETURN(esp_expander_i2c_ng_deinit(host_id), false, "I2C deinit failed");
+        ESP_UTILS_LOGD("Deinit I2C host(%d) via driver_ng", static_cast<int>(host_id));
     }
 
     setState(State::DEINIT);

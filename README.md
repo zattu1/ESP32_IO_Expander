@@ -1,8 +1,6 @@
-[![Arduino Lint](https://github.com/esp-arduino-libs/ESP32_IO_Expander/actions/workflows/arduino_lint.yml/badge.svg)](https://github.com/esp-arduino-libs/ESP32_IO_Expander/actions/workflows/arduino_lint.yml) [![pre-commit](https://github.com/esp-arduino-libs/ESP32_IO_Expander/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/esp-arduino-libs/ESP32_IO_Expander/actions/workflows/pre-commit.yml) [![Build Test Apps](https://github.com/esp-arduino-libs/ESP32_IO_Expander/actions/workflows/build_test.yml/badge.svg)](https://github.com/esp-arduino-libs/ESP32_IO_Expander/actions/workflows/build_test.yml)
+[![Arduino Lint](https://github.com/zattu1/ESP32_IO_Expander/actions/workflows/arduino_lint.yml/badge.svg)](https://github.com/zattu1/ESP32_IO_Expander/actions/workflows/arduino_lint.yml) [![pre-commit](https://github.com/zattu1/ESP32_IO_Expander/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/zattu1/ESP32_IO_Expander/actions/workflows/pre-commit.yml) [![Build Test Apps](https://github.com/zattu1/ESP32_IO_Expander/actions/workflows/build_test.yml/badge.svg)](https://github.com/zattu1/ESP32_IO_Expander/actions/workflows/build_test.yml)
 
-**Latest Arduino Library Version**: [![GitHub Release](https://img.shields.io/github/v/release/esp-arduino-libs/ESP32_IO_Expander)](https://github.com/esp-arduino-libs/ESP32_IO_Expander/releases)
-
-**Latest Espressif Component Version**: [![Espressif Release](https://components.espressif.com/components/espressif/esp32_io_expander/badge.svg)](https://components.espressif.com/components/espressif/esp32_io_expander)
+**Latest Version (this fork)**: [![GitHub Release](https://img.shields.io/github/v/release/zattu1/ESP32_IO_Expander)](https://github.com/zattu1/ESP32_IO_Expander/releases)
 
 # ESP32_IO_Expander
 
@@ -14,6 +12,15 @@
 * Supports controlling individual IO pin with functions like `pinMode()`, `digitalWrite()`, and `digitalRead()`.
 * Supports controlling multiple IO pins simultaneously with functions like `multiPinMode()`, `multiDigitalWrite()`, and `multiDigitalRead()`.
 * Compatible with the `Arduino`, `ESP-IDF` and `MicroPython` for compilation.
+
+### About this fork (v2.0.0)
+
+This repository is a fork of the upstream `esp-arduino-libs/ESP32_IO_Expander`.
+
+In **v2.0.0**, the I2C porting layer is aligned with the ESP-IDF **new I2C driver** (a.k.a. `driver_ng`).
+As a benefit, **the latest Arduino core** (including PlatformIO environments based on `platform-espressif32` from pioarduino) can be used.
+
+- PlatformIO platform: https://github.com/pioarduino/platform-espressif32
 
 ## Table of Contents
 
@@ -30,6 +37,7 @@
       - [Dependencies and Versions](#dependencies-and-versions-1)
       - [Installing the Library](#installing-the-library)
       - [Configuration Instructions](#configuration-instructions-1)
+    - [PlatformIO (pioarduino)](#platformio-pioarduino)
     - [Examples](#examples)
     - [Detailed Usage](#detailed-usage)
   - [FAQ](#faq)
@@ -78,7 +86,7 @@ Since `ESP32_IO_Expander` depends on the `esp-lib-utils` library which implement
 |                           **Dependency**                           |     **Version**      |
 | ------------------------------------------------------------------ | -------------------- |
 | [arduino-esp32](https://github.com/espressif/arduino-esp32)        | >= v3.0.0            |
-| [esp-lib-utils](https://github.com/esp-arduino-libs/esp-lib-utils) | >= 0.1.0 && <= 0.2.0 |
+| [esp-lib-utils](https://github.com/esp-arduino-libs/esp-lib-utils) | >= 0.2.0 && < 0.3.0  |
 
 #### Installing the Library
 
@@ -87,6 +95,25 @@ For installation of the `ESP32_IO_Expander` library, refer to [How to Install ES
 #### Configuration Instructions
 
 Since `ESP32_IO_Expander` depends on the `esp-lib-utils` library which implements the `logging`, `checking`, and `memory` functions, to configure it when using Arduino, please refer to the [instructions](https://github.com/esp-arduino-libs/esp-lib-utils#configuration-instructions-1).
+
+### PlatformIO (pioarduino)
+
+If you want to use the latest Arduino core in PlatformIO, you can use the pioarduino-maintained platform.
+
+Example `platformio.ini`:
+
+```ini
+[env:esp32]
+platform = https://github.com/pioarduino/platform-espressif32.git
+framework = arduino
+
+lib_deps =
+  https://github.com/zattu1/ESP32_IO_Expander.git#2.0.0
+```
+
+Notes:
+
+- `#2.0.0` requires a Git tag named `2.0.0` in this repository. If you tag releases with `v2.0.0`, use `#v2.0.0` instead.
 
 ### Examples
 
@@ -132,5 +159,5 @@ Users can find and modify the directory path for Arduino libraries by selecting 
 ### How to Install ESP32_IO_Expander in Arduino IDE?
 
 - **If users want to install online**, navigate to `Sketch` > `Include Library` > `Manage Libraries...` in the Arduino IDE, then search for `ESP32_IO_Expander` and click the `Install` button to install it.
-- **If users want to install manually**, download the required version of the `.zip` file from [ESP32_IO_Expander](https://github.com/esp-arduino-libs/ESP32_IO_Expander), then navigate to `Sketch` > `Include Library` > `Add .ZIP Library...` in the Arduino IDE, select the downloaded `.zip` file, and click `Open` to install it.
+- **If users want to install manually**, download the required version of the `.zip` file from [ESP32_IO_Expander](https://github.com/zattu1/ESP32_IO_Expander), then navigate to `Sketch` > `Include Library` > `Add .ZIP Library...` in the Arduino IDE, select the downloaded `.zip` file, and click `Open` to install it.
 - Users can also refer to the guides on library installation in the [Arduino IDE v1.x.x](https://docs.arduino.cc/software/ide-v1/tutorials/installing-libraries) or [Arduino IDE v2.x.x](https://docs.arduino.cc/software/ide-v2/tutorials/ide-v2-installing-a-library) documentation.
