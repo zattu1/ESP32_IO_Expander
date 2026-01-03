@@ -8,6 +8,11 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#include "esp_err.h"
+
 #include "driver/i2c_master.h"
 #include "esp_idf_version.h"
 #include "esp_bit_defs.h"
@@ -21,7 +26,84 @@
 #include "esp_expander_i2c_ng.h"
 
 /* Timeout of each I2C communication */
-#define I2C_TIMEOUT_MS          (10)
+#define I2C_TIMEOUT_MS          (150)
+
+// Arduino-ESP32 driver_ng I2C HAL symbol (provided by esp32-hal-i2c-ng.c)
+#ifdef __cplusplus
+extern "C" {
+#endif
+void *i2cBusHandle(uint8_t i2c_num);
+#ifdef __cplusplus
+}
+#endif
+
+static inline void reset_i2c_bus_on_timeout(i2c_port_t port)
+{
+    i2c_master_bus_handle_t bus = (i2c_master_bus_handle_t)i2cBusHandle((uint8_t)port);
+    if (bus != NULL) {
+        (void)i2c_master_bus_reset(bus);
+    }
+}
+
+typedef struct {
+    i2c_master_dev_handle_t dev;
+    const uint8_t *data;
+    size_t len;
+} i2c_tx_ctx_t;
+
+static esp_err_t i2c_tx_op(void *p)
+{
+    i2c_tx_ctx_t *c = (i2c_tx_ctx_t *)p;
+    return i2c_master_transmit(c->dev, c->data, c->len, I2C_TIMEOUT_MS);
+}
+
+typedef struct {
+    i2c_master_dev_handle_t dev;
+    uint8_t *data;
+    size_t len;
+} i2c_rx_ctx_t;
+
+static esp_err_t i2c_rx_op(void *p)
+{
+    i2c_rx_ctx_t *c = (i2c_rx_ctx_t *)p;
+    return i2c_master_receive(c->dev, c->data, c->len, I2C_TIMEOUT_MS);
+}
+
+static inline esp_err_t retry_if_timeout(esp_err_t err, TickType_t backoff_ticks)
+{
+    if (err == ESP_ERR_TIMEOUT) {
+        vTaskDelay(backoff_ticks);
+    }
+    return err;
+}
+
+static inline esp_err_t retry_i2c_op_if_timeout(i2c_port_t port, esp_err_t (*op)(void *ctx), void *ctx)
+{
+    // Retry a few times with a small backoff to tolerate bus contention or
+    // temporary clock-stretching. Keep it bounded to avoid blocking too long.
+    esp_err_t err = op(ctx);
+    if (err != ESP_ERR_TIMEOUT) {
+        return err;
+    }
+    reset_i2c_bus_on_timeout(port);
+    (void)retry_if_timeout(err, pdMS_TO_TICKS(2));
+
+    err = op(ctx);
+    if (err != ESP_ERR_TIMEOUT) {
+        return err;
+    }
+    reset_i2c_bus_on_timeout(port);
+    (void)retry_if_timeout(err, pdMS_TO_TICKS(5));
+
+    err = op(ctx);
+    if (err != ESP_ERR_TIMEOUT) {
+        return err;
+    }
+    reset_i2c_bus_on_timeout(port);
+    (void)retry_if_timeout(err, pdMS_TO_TICKS(10));
+
+    return op(ctx);
+}
 
 #define IO_COUNT                (16)
 
@@ -104,9 +186,24 @@ static esp_err_t read_input_reg(esp_io_expander_handle_t handle, uint32_t *value
 
     uint8_t temp[2] = {0, 0};
     uint8_t reg = INPUT_REG_ADDR;
-    ESP_RETURN_ON_ERROR(
-        i2c_master_transmit_receive(tca->i2c_dev, &reg, 1, (uint8_t *)&temp, 2, I2C_TIMEOUT_MS),
-        TAG, "Read input reg failed");
+
+    // Some Arduino-ESP32 / IDF driver_ng combos have been observed to be flaky with
+    // transmit+receive (repeated-start) sequences. Use an explicit write(reg) then read(data)
+    // sequence to improve compatibility.
+    i2c_tx_ctx_t tx = { tca->i2c_dev, &reg, 1 };
+    esp_err_t err = retry_i2c_op_if_timeout(tca->i2c_num, i2c_tx_op, &tx);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Read input reg TX failed [%s]", esp_err_to_name(err));
+        return err;
+    }
+
+    i2c_rx_ctx_t rx = { tca->i2c_dev, (uint8_t *)&temp, 2 };
+    err = retry_i2c_op_if_timeout(tca->i2c_num, i2c_rx_op, &rx);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Read input reg RX failed [%s]", esp_err_to_name(err));
+        return err;
+    }
+
     *value = (((uint32_t)temp[1]) << 8) | (temp[0]);
     return ESP_OK;
 }
@@ -117,9 +214,14 @@ static esp_err_t write_output_reg(esp_io_expander_handle_t handle, uint32_t valu
     value &= 0xffff;
 
     uint8_t data[] = {OUTPUT_REG_ADDR, value & 0xff, value >> 8};
-    ESP_RETURN_ON_ERROR(
-        i2c_master_transmit(tca->i2c_dev, data, sizeof(data), I2C_TIMEOUT_MS),
-        TAG, "Write output reg failed");
+
+    i2c_tx_ctx_t tx = { tca->i2c_dev, data, sizeof(data) };
+    esp_err_t err = retry_i2c_op_if_timeout(tca->i2c_num, i2c_tx_op, &tx);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Write output reg failed [%s]", esp_err_to_name(err));
+        return err;
+    }
+
     tca->regs.output = value;
     return ESP_OK;
 }
@@ -138,9 +240,14 @@ static esp_err_t write_direction_reg(esp_io_expander_handle_t handle, uint32_t v
     value &= 0xffff;
 
     uint8_t data[] = {DIRECTION_REG_ADDR, value & 0xff, value >> 8};
-    ESP_RETURN_ON_ERROR(
-        i2c_master_transmit(tca->i2c_dev, data, sizeof(data), I2C_TIMEOUT_MS),
-        TAG, "Write direction reg failed");
+
+    i2c_tx_ctx_t tx = { tca->i2c_dev, data, sizeof(data) };
+    esp_err_t err = retry_i2c_op_if_timeout(tca->i2c_num, i2c_tx_op, &tx);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Write direction reg failed [%s]", esp_err_to_name(err));
+        return err;
+    }
+
     tca->regs.direction = value;
     return ESP_OK;
 }

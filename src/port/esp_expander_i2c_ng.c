@@ -21,6 +21,13 @@ void *i2cBusHandle(uint8_t i2c_num);
 
 static uint32_t s_port_speed_hz[I2C_NUM_MAX] = {0};
 
+// If the host init is skipped (shared bus initialized elsewhere), we may not
+// know the actual bus speed here. Default to a conservative value to improve
+// reliability on electrically challenging buses.
+#ifndef ESP_EXPANDER_I2C_DEFAULT_SPEED_HZ
+#define ESP_EXPANDER_I2C_DEFAULT_SPEED_HZ (100000)
+#endif
+
 esp_err_t esp_expander_i2c_ng_init_from_legacy_config(i2c_port_t port, const i2c_config_t *cfg)
 {
     ESP_RETURN_ON_FALSE(cfg != NULL, ESP_ERR_INVALID_ARG, "exp_i2c_ng", "cfg is null");
@@ -55,7 +62,7 @@ esp_err_t esp_expander_i2c_ng_add_device(i2c_port_t port, uint16_t addr7, i2c_ma
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = addr7,
-        .scl_speed_hz = (int)(s_port_speed_hz[port] ? s_port_speed_hz[port] : 400000),
+        .scl_speed_hz = (int)(s_port_speed_hz[port] ? s_port_speed_hz[port] : ESP_EXPANDER_I2C_DEFAULT_SPEED_HZ),
     };
     return i2c_master_bus_add_device(bus, &dev_cfg, out_dev);
 }
