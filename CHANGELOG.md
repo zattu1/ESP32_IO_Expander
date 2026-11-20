@@ -1,5 +1,11 @@
 # ChangeLog
 
+## v2.1.0 - 2026-11-20
+
+### Enhancements:
+
+* fix(i2c): cast `sda_io_num` / `scl_io_num` to `gpio_num_t` for ESP-IDF 6.1.1 / Arduino-ESP32 4.0.0
+
 ## v2.0.0 - 2026-01-02
 
 ### Enhancements:

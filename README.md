@@ -13,11 +13,12 @@
 * Supports controlling multiple IO pins simultaneously with functions like `multiPinMode()`, `multiDigitalWrite()`, and `multiDigitalRead()`.
 * Compatible with the `Arduino`, `ESP-IDF` and `MicroPython` for compilation.
 
-### About this fork (v2.0.0)
+### About this fork (v2.1.0)
 
 This repository is a fork of the upstream `esp-arduino-libs/ESP32_IO_Expander`.
 
 In **v2.0.0**, the I2C porting layer is aligned with the ESP-IDF **new I2C driver** (a.k.a. `driver_ng`).
+**v2.1.0** casts the legacy `i2c_config_t` pins to `gpio_num_t` so the same port builds on ESP-IDF 6.1.1 / Arduino-ESP32 4.0.0.
 As a benefit, **the latest Arduino core** (including PlatformIO environments based on `platform-espressif32` from pioarduino) can be used.
 
 - PlatformIO platform: https://github.com/pioarduino/platform-espressif32
@@ -108,12 +109,12 @@ platform = https://github.com/pioarduino/platform-espressif32.git
 framework = arduino
 
 lib_deps =
-  https://github.com/zattu1/ESP32_IO_Expander.git#2.0.0
+  https://github.com/zattu1/ESP32_IO_Expander.git#v2.1.0
 ```
 
 Notes:
 
-- `#2.0.0` requires a Git tag named `2.0.0` in this repository. If you tag releases with `v2.0.0`, use `#v2.0.0` instead.
+- `#v2.1.0` matches the Git tag `v2.1.0` in this repository.
 
 ### Examples
 
