@@ -1,5 +1,9 @@
 # ChangeLog
 
+## v2.1.1 - 2026-11-20
+
+* IDF 6 の legacy I2C 警告を出さない。型は `driver/i2c_types_legacy.h` を読む。
+
 ## v2.1.0 - 2026-11-20
 
 ### Enhancements:

@@ -8,7 +8,11 @@
 
 #include <optional>
 #include <variant>
+#if __has_include("driver/i2c_types_legacy.h")
+#include "driver/i2c_types_legacy.h"
+#else
 #include "driver/i2c.h"
+#endif
 #include "port/esp_io_expander.h"
 
 // Refer to `esp32-hal-gpio.h` in Arduino

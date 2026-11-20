@@ -20,7 +20,11 @@ extern "C" {
  */
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
 
-#include "driver/i2c.h"          // for i2c_port_t, i2c_config_t
+#if __has_include("driver/i2c_types_legacy.h")
+#include "driver/i2c_types_legacy.h"
+#else
+#include "driver/i2c.h"
+#endif
 #include "driver/i2c_master.h"   // driver_ng APIs
 
 esp_err_t esp_expander_i2c_ng_init_from_legacy_config(i2c_port_t port, const i2c_config_t *cfg);
